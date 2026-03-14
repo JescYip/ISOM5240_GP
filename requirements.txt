@@ -1,0 +1,16 @@
+# 核心框架
+streamlit
+
+# 深度学习与模型调用
+transformers
+torch
+torchvision
+
+# 图像处理
+Pillow
+
+# 数据处理与评估（用于展示或计算指标）
+datasets
+evaluate
+numpy
+scikit-learn
