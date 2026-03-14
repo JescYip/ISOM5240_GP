@@ -1,0 +1,89 @@
+import streamlit as st
+from transformers import pipeline
+from PIL import Image
+import torch
+import os
+
+# 1. 页面配置 (必须作为第一个 Streamlit 命令)
+st.set_page_config(
+    page_title="ISOM5240 Retail AI Assistant", 
+    page_icon="🛍️",
+    layout="centered"
+)
+
+# UI 标题与简介
+st.title("🛍️ 智能零售营销助手 (微调版)")
+st.write("当前运行：微调后的 ViT (识别) + GPT-2 (营销文案生成)。")
+
+# 2. 加载模型 (指向你刚才保存的本地路径)
+@st.cache_resource
+def load_pipelines():
+    # --- 修改点 1：指向微调后的本地文件夹 ---
+    # 确保这两个文件夹与 app.py 在同一个目录下，或者使用绝对路径
+    vit_path = "./vit-retail-finetuned"
+    gpt2_path = "./gpt2-ad-finetuned"
+    
+    # 加载图像识别 Pipeline
+    image_classifier = pipeline("image-classification", model=vit_path)
+    
+    # 加载文本生成 Pipeline
+    text_generator = pipeline("text-generation", model=gpt2_path)
+    
+    return image_classifier, text_generator
+
+# 如果本地文件夹不存在，提示错误（IT 咨询中的健壮性检查）
+try:
+    v_pipe, t_pipe = load_pipelines()
+except Exception as e:
+    st.error(f"模型加载失败！请确保本地存在微调文件夹。错误详情: {e}")
+    st.stop()
+
+# 3. 上传图片组件
+uploaded_file = st.file_uploader("上传商品图片以开始营销自动化...", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption='待处理商品', use_container_width=True)
+    
+    st.divider()
+    
+    # --- 第一步：商品识别 (Keyword Identification) ---
+    with st.spinner('微调模型正在精准识别...'):
+        v_results = v_pipe(image)
+        top_label = v_results[0]['label']
+        confidence = v_results[0]['score']
+        
+    st.subheader("第一步：商品精准识别")
+    st.success(f"识别类别: **{top_label}** (置信度: {confidence:.2%})")
+    
+    # --- 第二步：广告生成 (Ad Generation) ---
+    with st.spinner('营销专家正在构思文案...'):
+        # --- 修改点 2：Prompt 格式对齐训练数据 ---
+        # 匹配我们训练时的格式: "Product: {product} \n Ad:"
+        prompt = f"Product: {top_label} \n Ad:"
+        
+        t_results = t_pipe(
+            prompt, 
+            max_length=128,          # 稍微增加长度以保证文案完整
+            num_return_sequences=1, 
+            truncation=True,
+            do_sample=True,          # 🚀 开启采样，增加创意性
+            temperature=0.8,         # 控制随机性
+            pad_token_id=50256       # 确保处理 GPT-2 的补全
+        )
+        
+        # 优化提取逻辑：截取 "Ad:" 之后的内容
+        full_text = t_results[0]['generated_text']
+        if "Ad:" in full_text:
+            generated_text = full_text.split("Ad:")[-1].strip()
+        else:
+            generated_text = full_text.replace(prompt, "").strip()
+
+    st.subheader("第二步：自动化广告文案")
+    st.info(generated_text if generated_text else "模型正在深度解析中...")
+
+    # 展示逻辑解题方法 (Logical Approach)
+    with st.expander("查看技术闭环 (Technical Business Logic)"):
+        st.write("1. **CV Optimization**: 通过微调，ViT 已从通用识别转变为专注零售 141 类的专家模型。")
+        st.write(f"2. **NLP Alignment**: GPT-2 已学习了针对 '{top_label}' 类别的营销话术。")
+        st.write("3. **End-to-End Value**: 实现了从非结构化图片到结构化营销内容的自动化产出。")
