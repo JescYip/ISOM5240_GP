@@ -56,39 +56,44 @@ if uploaded_file is not None:
     st.subheader("第一步：商品精准识别")
     st.success(f"识别类别: **{top_label}** (置信度: {confidence:.2%})")
     
-    # --- 第二步：生成广告词 (修正版) ---
-    with st.spinner('正在创作广告文案...'):
-        # 1. 必须匹配训练时的格式，不要加多余的描述词
-        # 注意 \n 前后的空格要跟训练代码完全一致
-        prompt = f"Product: {top_label} \n Ad:"
+    # --- 第二步：广告生成 (ISOM5240 优化版) ---
+    with st.spinner('正在基于微调逻辑生成文案...'):
+        # 1. 必须与训练时的数据格式 100% 对齐 [重要]
+        # 注意空格和换行符，多一个空格模型可能就不认识了
+        target_prompt = f"Product: {top_label} \n Ad:"
         
-        # 2. 调用模型
         t_results = t_pipe(
-            prompt, 
-            max_length=150,          # 稍微长一点，防止话没说完
+            target_prompt, 
+            max_length=80,           # 广告词不需要太长，80 够了
             num_return_sequences=1, 
-            truncation=True,
-            do_sample=True,          # 开启随机采样，增加创意
-            temperature=0.7,         # 控制随机性
-            top_k=50,                # 限制候选词，提高质量
+            do_sample=True,          # 🚀 开启随机采样，避免机械重复
+            temperature=0.8,         # 增加一点创意度
+            top_p=0.9,               # 过滤掉低概率词
             pad_token_id=50256
         )
         
-        # 3. 稳健的提取逻辑：直接切分字符串
-        full_output = t_results[0]['generated_text']
+        # 2. 更加鲁棒的提取逻辑
+        raw_output = t_results[0]['generated_text']
         
-        # 调试用：如果还是没输出，可以取消下面这行的注释看看模型到底输出了什么
-        # st.write(f"DEBUG: {full_output}") 
-    
-        if " Ad:" in full_output:
-            # 获取 "Ad:" 之后的所有内容
-            generated_text = full_output.split(" Ad:")[-1].strip()
-            # 去掉可能存在的结束符
-            generated_text = generated_text.replace("<|endoftext|>", "")
+        # 如果模型只是复读机，我们需要切除 Prompt 部分
+        if " Ad:" in raw_output:
+            # 只取 "Ad:" 之后的内容
+            final_ad = raw_output.split(" Ad:")[-1].strip()
+            # 清理掉 GPT-2 偶尔会带出来的结束符
+            final_ad = final_ad.replace("<|endoftext|>", "").split("\n")[0]
         else:
-            # 如果没找到分隔符，就尝试去掉 prompt 本身
-            generated_text = full_output.replace(prompt, "").strip()
+            final_ad = raw_output.replace(target_prompt, "").strip()
     
+    st.subheader("第二步：自动化广告生成")
+    if final_ad and len(final_ad) > 5:
+        st.info(f"✨ {final_ad}")
+    else:
+        # 如果还是失败，显示一个保底提示，方便你检查
+        st.warning("⚠️ 模型当前生成的文案过短或格式不符。")
+        with st.expander("调试：查看原始输出"):
+            st.write(f"Prompt: {target_prompt}")
+            st.write(f"Raw Output: {raw_output}")
+            
     st.subheader("第二步：广告生成 (Ad Generation)")
     if generated_text:
         st.info(generated_text)
