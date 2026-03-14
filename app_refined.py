@@ -56,31 +56,44 @@ if uploaded_file is not None:
     st.subheader("第一步：商品精准识别")
     st.success(f"识别类别: **{top_label}** (置信度: {confidence:.2%})")
     
-    # --- 第二步：广告生成 (Ad Generation) ---
-    with st.spinner('营销专家正在构思文案...'):
-        # --- 修改点 2：Prompt 格式对齐训练数据 ---
-        # 匹配我们训练时的格式: "Product: {product} \n Ad:"
+    # --- 第二步：生成广告词 (修正版) ---
+    with st.spinner('正在创作广告文案...'):
+        # 1. 必须匹配训练时的格式，不要加多余的描述词
+        # 注意 \n 前后的空格要跟训练代码完全一致
         prompt = f"Product: {top_label} \n Ad:"
         
+        # 2. 调用模型
         t_results = t_pipe(
             prompt, 
-            max_length=128,          # 稍微增加长度以保证文案完整
+            max_length=150,          # 稍微长一点，防止话没说完
             num_return_sequences=1, 
             truncation=True,
-            do_sample=True,          # 🚀 开启采样，增加创意性
-            temperature=0.8,         # 控制随机性
-            pad_token_id=50256       # 确保处理 GPT-2 的补全
+            do_sample=True,          # 开启随机采样，增加创意
+            temperature=0.7,         # 控制随机性
+            top_k=50,                # 限制候选词，提高质量
+            pad_token_id=50256
         )
         
-        # 优化提取逻辑：截取 "Ad:" 之后的内容
-        full_text = t_results[0]['generated_text']
-        if "Ad:" in full_text:
-            generated_text = full_text.split("Ad:")[-1].strip()
+        # 3. 稳健的提取逻辑：直接切分字符串
+        full_output = t_results[0]['generated_text']
+        
+        # 调试用：如果还是没输出，可以取消下面这行的注释看看模型到底输出了什么
+        # st.write(f"DEBUG: {full_output}") 
+    
+        if " Ad:" in full_output:
+            # 获取 "Ad:" 之后的所有内容
+            generated_text = full_output.split(" Ad:")[-1].strip()
+            # 去掉可能存在的结束符
+            generated_text = generated_text.replace("<|endoftext|>", "")
         else:
-            generated_text = full_text.replace(prompt, "").strip()
-
-    st.subheader("第二步：自动化广告文案")
-    st.info(generated_text if generated_text else "模型正在深度解析中...")
+            # 如果没找到分隔符，就尝试去掉 prompt 本身
+            generated_text = full_output.replace(prompt, "").strip()
+    
+    st.subheader("第二步：广告生成 (Ad Generation)")
+    if generated_text:
+        st.info(generated_text)
+    else:
+        st.warning("模型未能生成有效文案，请尝试重新上传或检查模型微调情况。")
 
     # 展示逻辑解题方法 (Logical Approach)
     with st.expander("查看技术闭环 (Technical Business Logic)"):
