@@ -4,8 +4,8 @@ from PIL import Image
 import torch
 
 # 设置页面标题
-st.set_caption("ISOM5240 Retail AI Assistant")
-st.title("🛍️ 智能零售营销助手")
+# 设置页面标题和图标
+st.set_page_config(page_title="ISOM5240 Retail AI Assistant", page_icon="🛍️")st.title("🛍️ 智能零售营销助手")
 st.write("上传一张商品图片，AI 将自动识别类别并生成广告词。")
 
 # 1. 加载模型 (使用缓存避免重复加载)
