@@ -1,16 +1,19 @@
-# 核心框架
+# 核心 Web 框架
 streamlit
 
-# 深度学习与模型调用
+# 深度学习核心 (加载微调模型必选)
 transformers
 torch
 torchvision
 
-# 图像处理
+# 图像处理 (处理上传的商品图片)
 Pillow
 
-# 数据处理与评估（用于展示或计算指标）
-datasets
-evaluate
+# 科学计算与指标 (用于 compute_metrics 和结果处理)
 numpy
+evaluate
 scikit-learn
+
+# 额外补充：确保从 Hugging Face 顺畅下载私有/微调模型
+huggingface_hub
+accelerate
