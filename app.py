@@ -69,23 +69,32 @@ if uploaded_file is not None:
             # 改进Prompt：使用更自然的语言，避免模板化
             prompt = f"Imagine you're writing a catchy slogan for a {top_label} with these features: {full_description}. Create an exciting and persuasive ad copy that highlights the benefits and makes people want to buy it:"
             
-            ad_results = t_generator(
-                prompt,
-                max_length=150,
-                min_length=50,
-                num_return_sequences=3,
-                truncation=True,
-                temperature=0.8,
-                pad_token_id=50256,
-                do_sample=True,
-                no_repeat_ngram_size=2
-            )
+            # 检查机制：如果广告太短，重新生成
+            ad_text = ""
+            min_words = 10  # 至少10个词
+            max_attempts = 5  # 最多尝试5次
+            attempts = 0
             
-            # 后处理：移除可能的模板元素
-            ad_text = ad_results[0]['generated_text'].replace(prompt, "").strip()
-            # 移除常见的广告模板前缀和后缀
-            ad_text = ad_text.replace("Ad:", "").replace("#", "").strip()
-            # 如果还有其他不想要的部分，可以继续清理
+            while len(ad_text.split()) < min_words and attempts < max_attempts:
+                ad_results = t_generator(
+                    prompt,
+                    max_length=150,
+                    min_length=50,
+                    num_return_sequences=1,  # 每次生成一个
+                    truncation=True,
+                    temperature=0.8,
+                    pad_token_id=50256,
+                    do_sample=True,
+                    no_repeat_ngram_size=2
+                )
+                
+                ad_text = ad_results[0]['generated_text'].replace(prompt, "").strip()
+                # 移除常见的广告模板前缀和后缀
+                ad_text = ad_text.replace("Ad:", "").replace("#", "").strip()
+                attempts += 1
+            
+            if len(ad_text.split()) < min_words:
+                ad_text = "抱歉，无法生成足够长的广告文案。请尝试不同的图片或调整参数。"
 
         st.info(ad_text if ad_text else "正在构思中...")
 
