@@ -12,13 +12,16 @@ st.write("集成 Swin-Transformer, BLIP 与 GPT-2 的多模态自动营销系统
 # --- 1. 加载模型 (Pipeline 集成) ---
 @st.cache_resource
 def load_pipelines():
-    # Pipeline A: 图像分类
+    # 1. 图像分类 (Swin-Tiny)
     classifier = pipeline("image-classification", model="microsoft/swin-tiny-patch4-window7-224")
     
-    # --- 核心修复点：将 "image-to-text" 改为 "image-captioning" ---
-    captioner = pipeline("image-captioning", model="Salesforce/blip-image-captioning-base")
-    
-    # Pipeline C: 广告生成
+    # 2. 核心修复点：使用 "image-to-text"
+    # 如果环境依然报错，请确保 requirements.txt 中的 transformers 版本 >= 4.30.0
+    try:
+        captioner = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
+    except KeyError:
+        captioner = pipeline("image-captioning", model="Salesforce/blip-image-captioning-base")    
+    # 3. 广告生成 (GPT-2)
     ad_generator = pipeline("text-generation", model="SCM1120/gpt2-ad-finetuned")
 
     return classifier, captioner, ad_generator
