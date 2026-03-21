@@ -6,8 +6,8 @@ import torch
 # --- 页面配置 ---
 st.set_page_config(page_title="ISOM5240 Retail AI Assistant", page_icon="🛍️", layout="wide")
 
-st.title("🛍️ 智能零售营销助手 (Pro 版)")
-st.write("集成 Swin-Transformer, BLIP 与 GPT-2 的多模态自动营销系统。")
+st.title("🛍️ Intelligent Retail Marketing Assistant (Pro Version)")
+st.write("Integrated multimodal automatic marketing system with Swin-Transformer, BLIP, and GPT-2.")
 
 # --- 1. 加载模型 (Pipeline 集成) ---
 @st.cache_resource
@@ -28,9 +28,9 @@ with st.spinner('AI 引擎启动中...'):
 
 # --- 2. 侧边栏与上传组件 ---
 with st.sidebar:
-    st.header("上传中心")
-    uploaded_file = st.file_uploader("选择商品图片...", type=["jpg", "jpeg", "png"])
-    st.info("建议：使用背景干净的电商产品图效果最佳。")
+    st.header("Upload Center")
+    uploaded_file = st.file_uploader("Select product image...", type=["jpg", "jpeg", "png"])
+    st.info("Recommendation: Use clean background e-commerce product images for best results.")
 
 # --- 3. 主交互逻辑 ---
 if uploaded_file is not None:
@@ -38,34 +38,34 @@ if uploaded_file is not None:
     
     image = Image.open(uploaded_file)
     with col1:
-        st.image(image, caption='待识别商品', use_container_width=True)
+        st.image(image, caption='Product to be identified', use_container_width=True)
 
     with col2:
-        st.subheader("第一步：深度特征提取")
+        st.subheader("Step 1: Deep Feature Extraction")
         
         # --- A. 运行 Swin-Tiny 分类 ---
-        with st.spinner('Swin-Tiny 正在分析类别...'):
+        with st.spinner('Swin-Tiny analyzing category...'):
             cls_results = v_classifier(image)
             top_label = cls_results[0]['label']
             cls_confidence = cls_results[0]['score']
         
         # --- B. 运行 BLIP 生成描述 ---
-        with st.spinner('BLIP 正在生成视觉描述...'):
+        with st.spinner('BLIP generating visual description...'):
             cap_results = v_captioner(image, text="")
             # 获取完整描述用于广告生成
             full_description = cap_results[0]['generated_text']
             keywords = ", ".join(full_description.split()[:10]) # 提取前10个词以提供更多上下文
 
         # 展示第一步结果
-        st.success(f"**商品类别**: {top_label}")
-        st.write(f"**视觉描述**: `{full_description}`")
-        st.caption(f"分类置信度: {cls_confidence:.2%}")
+        st.success(f"**Product Category**: {top_label}")
+        st.write(f"**Visual Description**: `{full_description}`")
+        st.caption(f"Classification Confidence: {cls_confidence:.2%}")
 
         st.divider()
 
         # --- 第二步：GPT-2 广告生成 ---
-        st.subheader("第二步：智能文案创作")
-        with st.spinner('GPT-2 正在构思广告语...'):
+        st.subheader("Step 2: Intelligent Copy Creation")
+        with st.spinner('GPT-2 crafting advertisement...'):
             # 改进Prompt：使用更自然的语言，避免模板化
             prompt = f"Imagine you're writing a catchy slogan for a {top_label} with these features: {full_description}. Create an exciting and persuasive ad copy that highlights the benefits and makes people want to buy it:"
             
@@ -94,14 +94,14 @@ if uploaded_file is not None:
                 attempts += 1
             
             if len(ad_text.split()) < min_words:
-                ad_text = "抱歉，无法生成足够长的广告文案。请尝试不同的图片或调整参数。"
+                ad_text = "Sorry, unable to generate a sufficiently long advertisement. Please try a different image or adjust parameters."
 
-        st.info(ad_text if ad_text else "正在构思中...")
+        st.info(ad_text if ad_text else "Crafting in progress...")
 
     # --- 4. 技术架构说明 (符合 ISOM5240 项目要求) ---
-    with st.expander("查看项目逻辑架构 (Technical Pipeline Logic)"):
+    with st.expander("View Project Technical Architecture (Technical Pipeline Logic)"):
         st.markdown(f"""
-        1.  **Swin-Tiny (Vision)**: 采用层次化 Transformer 架构对商品进行精确 3 分类（上装/下装/鞋子）。
-        2.  **BLIP (Visual-Language)**: 负责 Bridge（桥接），将图像特征转化为非结构化的视觉描述词汇。
-        3.  **GPT-2 (Generative AI)**: 接收 `Category + Keywords` 的多维输入，通过自回归生成符合电商逻辑的营销文案。
+        1.  **Swin-Tiny (Vision)**: Employs hierarchical Transformer architecture for precise 3-category classification of products (tops/bottoms/shoes).
+        2.  **BLIP (Visual-Language)**: Serves as Bridge, converting image features into unstructured visual descriptions.
+        3.  **GPT-2 (Generative AI)**: Receives `Category + Description` multidimensional input, generating e-commerce compliant marketing copy through autoregression.
         """)
