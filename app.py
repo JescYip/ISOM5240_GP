@@ -51,7 +51,7 @@ if uploaded_file is not None:
         
         # --- B. 运行 BLIP 生成描述 ---
         with st.spinner('BLIP 正在生成视觉描述...'):
-            cap_results = v_captioner(image)
+            cap_results = v_captioner(image, text="")
             # 获取描述并精简为几个关键词（模拟 5 个词的描述）
             full_description = cap_results[0]['generated_text']
             keywords = ", ".join(full_description.split()[:5]) # 提取前5个核心词
