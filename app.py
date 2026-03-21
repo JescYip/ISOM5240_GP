@@ -13,7 +13,7 @@ st.write("集成 Swin-Transformer, BLIP 与 GPT-2 的多模态自动营销系统
 @st.cache_resource
 def load_pipelines():
     # 1. 图像分类 (Swin-Tiny)
-    classifier = pipeline("image-classification", model="microsoft/swin-tiny-patch4-window7-224")
+    classifier = pipeline("image-classification", model="JescYip/Swin-Tiny")
     
     # 2. 图像描述 (BLIP)
     captioner = pipeline("image-text-to-text", model="Salesforce/blip-image-captioning-base")
