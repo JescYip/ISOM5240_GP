@@ -52,13 +52,13 @@ if uploaded_file is not None:
         # --- B. 运行 BLIP 生成描述 ---
         with st.spinner('BLIP 正在生成视觉描述...'):
             cap_results = v_captioner(image, text="")
-            # 获取描述并精简为几个关键词（模拟 5 个词的描述）
+            # 获取完整描述用于广告生成
             full_description = cap_results[0]['generated_text']
-            keywords = ", ".join(full_description.split()[:5]) # 提取前5个核心词
+            keywords = ", ".join(full_description.split()[:10]) # 提取前10个词以提供更多上下文
 
         # 展示第一步结果
         st.success(f"**商品类别**: {top_label}")
-        st.write(f"**视觉关键词**: `{keywords}`")
+        st.write(f"**视觉描述**: `{full_description}`")
         st.caption(f"分类置信度: {cls_confidence:.2%}")
 
         st.divider()
@@ -66,18 +66,20 @@ if uploaded_file is not None:
         # --- 第二步：GPT-2 广告生成 ---
         st.subheader("第二步：智能文案创作")
         with st.spinner('GPT-2 正在构思广告语...'):
-            # 构造更强的上下文 Prompt：类别 + 关键词描述
-            prompt = f"Product: {top_label}. Features: {keywords}. Amazing creative advertisement:"
+            # 改进Prompt：使用更完整的描述和创意指令
+            prompt = f"Write a creative and engaging advertisement for a {top_label}. Key features: {full_description}. Make it catchy, persuasive, and highlight the benefits:"
             
             ad_results = t_generator(
                 prompt,
-                max_length=80,
-                num_return_sequences=1,
+                max_length=100,  # 增加长度以生成更完整的广告
+                num_return_sequences=3,  # 生成多个选项
                 truncation=True,
-                temperature=0.7, # 增加文案的创造力
-                pad_token_id=50256
+                temperature=0.8,  # 稍微提高创造力
+                pad_token_id=50256,
+                do_sample=True  # 启用采样
             )
             
+            # 选择最好的广告（这里简单选择第一个，你可以添加逻辑选择最长的或最相关的）
             ad_text = ad_results[0]['generated_text'].replace(prompt, "").strip()
 
         st.info(ad_text if ad_text else "正在构思中...")
