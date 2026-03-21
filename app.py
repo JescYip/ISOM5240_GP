@@ -66,23 +66,26 @@ if uploaded_file is not None:
         # --- 第二步：GPT-2 广告生成 ---
         st.subheader("第二步：智能文案创作")
         with st.spinner('GPT-2 正在构思广告语...'):
-            # 改进Prompt：使用更完整的描述和创意指令
-            prompt = f"Write a creative and engaging advertisement for a {top_label}. Key features: {full_description}. Make it catchy, persuasive, and highlight the benefits:"
+            # 改进Prompt：使用更自然的语言，避免模板化
+            prompt = f"Imagine you're writing a catchy slogan for a {top_label} with these features: {full_description}. Create an exciting and persuasive ad copy that highlights the benefits and makes people want to buy it:"
             
             ad_results = t_generator(
                 prompt,
-                max_length=150,  # 进一步增加最大长度
-                min_length=50,   # 设置最小长度以确保更长的输出
+                max_length=150,
+                min_length=50,
                 num_return_sequences=3,
                 truncation=True,
                 temperature=0.8,
                 pad_token_id=50256,
                 do_sample=True,
-                no_repeat_ngram_size=2  # 避免重复短语
+                no_repeat_ngram_size=2
             )
             
-            # 选择最好的广告（这里简单选择第一个，你可以添加逻辑选择最长的或最相关的）
+            # 后处理：移除可能的模板元素
             ad_text = ad_results[0]['generated_text'].replace(prompt, "").strip()
+            # 移除常见的广告模板前缀和后缀
+            ad_text = ad_text.replace("Ad:", "").replace("#", "").strip()
+            # 如果还有其他不想要的部分，可以继续清理
 
         st.info(ad_text if ad_text else "正在构思中...")
 
