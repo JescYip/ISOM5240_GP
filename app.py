@@ -71,12 +71,14 @@ if uploaded_file is not None:
             
             ad_results = t_generator(
                 prompt,
-                max_length=100,  # 增加长度以生成更完整的广告
-                num_return_sequences=3,  # 生成多个选项
+                max_length=150,  # 进一步增加最大长度
+                min_length=50,   # 设置最小长度以确保更长的输出
+                num_return_sequences=3,
                 truncation=True,
-                temperature=0.8,  # 稍微提高创造力
+                temperature=0.8,
                 pad_token_id=50256,
-                do_sample=True  # 启用采样
+                do_sample=True,
+                no_repeat_ngram_size=2  # 避免重复短语
             )
             
             # 选择最好的广告（这里简单选择第一个，你可以添加逻辑选择最长的或最相关的）
