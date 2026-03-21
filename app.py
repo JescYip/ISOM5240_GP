@@ -15,12 +15,9 @@ def load_pipelines():
     # 1. 图像分类 (Swin-Tiny)
     classifier = pipeline("image-classification", model="microsoft/swin-tiny-patch4-window7-224")
     
-    # 2. 核心修复点：使用 "image-to-text"
-    # 如果环境依然报错，请确保 requirements.txt 中的 transformers 版本 >= 4.30.0
-    try:
-        captioner = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
-    except KeyError:
-        captioner = pipeline("image-captioning", model="Salesforce/blip-image-captioning-base")    
+    # 2. 图像描述 (BLIP)
+    captioner = pipeline("image-text-to-text", model="Salesforce/blip-image-captioning-base")
+    
     # 3. 广告生成 (GPT-2)
     ad_generator = pipeline("text-generation", model="SCM1120/gpt2-ad-finetuned")
 
