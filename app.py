@@ -3,76 +3,92 @@ from transformers import pipeline
 from PIL import Image
 import torch
 
-# 设置页面标题
-# 设置页面标题和图标
-# 必须是独立的行
-st.set_page_config(page_title="ISOM5240 Retail AI Assistant", page_icon="🛍️")
+# --- 页面配置 ---
+st.set_page_config(page_title="ISOM5240 Retail AI Assistant", page_icon="🛍️", layout="wide")
 
-# 换行后写标题
-st.title("🛍️ 智能零售营销助手")
-st.write("上传一张商品图片，AI 将自动识别类别并生成广告词。")
+st.title("🛍️ 智能零售营销助手 (Pro 版)")
+st.write("集成 Swin-Transformer, BLIP 与 GPT-2 的多模态自动营销系统。")
 
-# 1. 加载模型 (使用缓存避免重复加载)
+# --- 1. 加载模型 (Pipeline 集成) ---
 @st.cache_resource
 def load_pipelines():
-    # Pipeline 1: 图像分类 (Image Classification)
-    # 使用训练前的原始模型: google/vit-base-patch16-224
-    image_classifier = pipeline("image-classification", model="google/vit-base-patch16-224")
-    #image_classifier = pipeline("image-classification", model="SCM1120/blip-fashion-finetuned")
+    # Pipeline A: 图像分类 (使用你微调效果最好的 Swin-Tiny)
+    # 请替换为你自己的 Hugging Face ID 或本地路径
+    classifier = pipeline("image-classification", model="JescYip/Swin-Tiny")
     
-    # Pipeline 2: 文本生成 (Text Generation)
-    # 使用训练前的原始模型: gpt2
-    # text_generator = pipeline("text-generation", model="gpt2")
-    text_generator = pipeline("text-generation", model="SCM1120/gpt2-ad-finetuned")
+    # Pipeline B: 图像描述 (Visual Captioning - BLIP)
+    # 负责提取图片的细节描述
+    captioner = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
+    
+    # Pipeline C: 广告生成 (Fine-tuned GPT-2)
+    # 负责根据前两步的结果生成文案
+    ad_generator = pipeline("text-generation", model="gpt2") # 建议替换为你微调后的 SCM1120/gpt2-ad-finetuned
 
-    return image_classifier, text_generator
+    return classifier, captioner, ad_generator
 
-v_pipe, t_pipe = load_pipelines()
+with st.spinner('AI 引擎启动中...'):
+    v_classifier, v_captioner, t_generator = load_pipelines()
 
-# 2. 上传图片组件
-uploaded_file = st.file_uploader("选择商品图片...", type=["jpg", "jpeg", "png"])
+# --- 2. 侧边栏与上传组件 ---
+with st.sidebar:
+    st.header("上传中心")
+    uploaded_file = st.file_uploader("选择商品图片...", type=["jpg", "jpeg", "png"])
+    st.info("建议：使用背景干净的电商产品图效果最佳。")
 
+# --- 3. 主交互逻辑 ---
 if uploaded_file is not None:
-    # 展示图片
+    col1, col2 = st.columns([1, 1])
+    
     image = Image.open(uploaded_file)
-    st.image(image, caption='上传的商品图片', use_container_width=True)
-    
-    st.divider()
-    
-    # --- 第一步：生成关键词简介 ---
-    with st.spinner('正在识别商品类别...'):
-        # 进行推理
-        v_results = v_pipe(image)
-        # 获取概率最高的 Top-1 结果
-        top_label = v_results[0]['label']
-        confidence = v_results[0]['score']
-        
-    st.subheader("第一步：商品识别 (Keyword Identification)")
-    st.success(f"识别结果: **{top_label}** (置信度: {confidence:.2%})")
-    
-    # --- 第二步：生成广告词 ---
-    with st.spinner('正在创作广告文案...'):
-        # 构造 Prompt：引导模型生成广告逻辑
-        # 因为是原始 GPT-2，我们需要更明确的 Prompt 引导
-        prompt = f"The following is a creative advertisement for a professional retail product.\nProduct: {top_label}\nAd Copy:"
-        
-        # 生成文本
-        t_results = t_pipe(
-            prompt, 
-            max_length=100, 
-            num_return_sequences=1, 
-            truncation=True,
-            pad_token_id=50256 # GPT-2 的结束符 ID
-        )
-        
-        # 提取生成的内容（去掉 Prompt 部分）
-        generated_text = t_results[0]['generated_text'].replace(prompt, "").strip()
+    with col1:
+        st.image(image, caption='待识别商品', use_container_width=True)
 
-    st.subheader("第二步：广告生成 (Ad Generation)")
-    st.info(generated_text if generated_text else "正在努力构思中...")
+    with col2:
+        st.subheader("第一步：深度特征提取")
+        
+        # --- A. 运行 Swin-Tiny 分类 ---
+        with st.spinner('Swin-Tiny 正在分析类别...'):
+            cls_results = v_classifier(image)
+            top_label = cls_results[0]['label']
+            cls_confidence = cls_results[0]['score']
+        
+        # --- B. 运行 BLIP 生成描述 ---
+        with st.spinner('BLIP 正在生成视觉描述...'):
+            cap_results = v_captioner(image)
+            # 获取描述并精简为几个关键词（模拟 5 个词的描述）
+            full_description = cap_results[0]['generated_text']
+            keywords = ", ".join(full_description.split()[:5]) # 提取前5个核心词
 
-    # 项目建议：展示逻辑解题方法 (Logical Approach)
-    with st.expander("查看技术逻辑 (Technical Logic)"):
-        st.write(f"1. **Computer Vision**: 使用 ViT 模型提取图像特征并映射到 ImageNet 1000 类。")
-        st.write(f"2. **NLP Bridge**: 将识别出的 '{top_label}' 作为上下文输入给 GPT-2。")
-        st.write(f"3. **Generative AI**: 通过自回归预测 (Autoregressive) 生成后续营销文本。")
+        # 展示第一步结果
+        st.success(f"**商品类别**: {top_label}")
+        st.write(f"**视觉关键词**: `{keywords}`")
+        st.caption(f"分类置信度: {cls_confidence:.2%}")
+
+        st.divider()
+
+        # --- 第二步：GPT-2 广告生成 ---
+        st.subheader("第二步：智能文案创作")
+        with st.spinner('GPT-2 正在构思广告语...'):
+            # 构造更强的上下文 Prompt：类别 + 关键词描述
+            prompt = f"Product: {top_label}. Features: {keywords}. Amazing creative advertisement:"
+            
+            ad_results = t_generator(
+                prompt,
+                max_length=80,
+                num_return_sequences=1,
+                truncation=True,
+                temperature=0.7, # 增加文案的创造力
+                pad_token_id=50256
+            )
+            
+            ad_text = ad_results[0]['generated_text'].replace(prompt, "").strip()
+
+        st.info(ad_text if ad_text else "正在构思中...")
+
+    # --- 4. 技术架构说明 (符合 ISOM5240 项目要求) ---
+    with st.expander("查看项目逻辑架构 (Technical Pipeline Logic)"):
+        st.markdown(f"""
+        1.  **Swin-Tiny (Vision)**: 采用层次化 Transformer 架构对商品进行精确 3 分类（上装/下装/鞋子）。
+        2.  **BLIP (Visual-Language)**: 负责 Bridge（桥接），将图像特征转化为非结构化的视觉描述词汇。
+        3.  **GPT-2 (Generative AI)**: 接收 `Category + Keywords` 的多维输入，通过自回归生成符合电商逻辑的营销文案。
+        """)
