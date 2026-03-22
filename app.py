@@ -19,7 +19,7 @@ def load_pipelines():
     captioner = pipeline("image-text-to-text", model="Salesforce/blip-image-captioning-base")
     
     # 3. 广告生成 (GPT-2)
-    ad_generator = pipeline("text-generation", model="facebook/bart-base")
+    ad_generator = pipeline("text-generation", model="t5-base")
 
     return classifier, captioner, ad_generator
     
