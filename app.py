@@ -19,7 +19,7 @@ def load_pipelines():
     captioner = pipeline("image-text-to-text", model="microsoft/git-base")
     
     # 3. 广告生成 (GPT-2)
-    ad_generator = pipeline("text-generation", model="SCM1120/gpt2-ad-finetuned")
+    ad_generator = pipeline("text-generation", model="gpt2")
 
     return classifier, captioner, ad_generator
     
