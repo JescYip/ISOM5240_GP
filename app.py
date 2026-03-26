@@ -6,7 +6,7 @@ import torch
 st.set_page_config(page_title="ISOM5240 Retail AI Assistant", page_icon="🛍️", layout="wide")
 
 st.title("🛍️ Intelligent Retail Marketing Assistant (Pro Version)")
-st.write("Integrated multimodal automatic marketing system with Swin-Transformer, BLIP, and GPT-2.")
+st.write("Integrated multimodal automatic marketing system with ViT-Base, BLIP, and GPT-2.")
 
 # --- 1. 加载模型 (Pipeline 集成) ---
 @st.cache_resource
@@ -22,7 +22,7 @@ def load_pipelines():
 
     return classifier, captioner, ad_generator
     
-with st.spinner('AI 引擎启动中...'):
+with st.spinner('Loading AI engine...'):
     v_classifier, v_captioner, t_generator = load_pipelines()
 
 # --- 2. 侧边栏与上传组件 ---
