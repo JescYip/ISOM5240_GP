@@ -3,7 +3,6 @@ from transformers import pipeline
 from PIL import Image
 import torch
 
-# --- 页面配置 ---
 st.set_page_config(page_title="ISOM5240 Retail AI Assistant", page_icon="🛍️", layout="wide")
 
 st.title("🛍️ Intelligent Retail Marketing Assistant (Pro Version)")
@@ -12,8 +11,8 @@ st.write("Integrated multimodal automatic marketing system with Swin-Transformer
 # --- 1. 加载模型 (Pipeline 集成) ---
 @st.cache_resource
 def load_pipelines():
-    # 1. 图像分类 (Swin-Tiny)
-    classifier = pipeline("image-classification", model="JescYip/Swin-Tiny")
+    # 1. 图像分类 (ViT-Base)
+    classifier = pipeline("image-classification", model="JescYip/best-vit-base-isic")
     
     # 2. 图像描述 (BLIP)
     captioner = pipeline("image-text-to-text", model="microsoft/git-base")
@@ -98,10 +97,10 @@ if uploaded_file is not None:
 
         st.info(ad_text if ad_text else "Crafting in progress...")
 
-    # --- 4. 技术架构说明 (符合 ISOM5240 项目要求) ---
+    # --- 4. 技术架构说明 ---
     with st.expander("View Project Technical Architecture (Technical Pipeline Logic)"):
         st.markdown(f"""
-        1.  **Swin-Tiny (Vision)**: Employs hierarchical Transformer architecture for precise 3-category classification of products (tops/bottoms/shoes).
+        1.  **ViT-Base(Vision)**: Employs hierarchical Transformer architecture for precise 3-category classification of products (tops/bottoms/shoes).
         2.  **BLIP (Visual-Language)**: Serves as Bridge, converting image features into unstructured visual descriptions.
         3.  **GPT-2 (Generative AI)**: Receives `Category + Description` multidimensional input, generating e-commerce compliant marketing copy through autoregression.
         """)
